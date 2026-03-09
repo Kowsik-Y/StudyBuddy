@@ -178,6 +178,7 @@ async def study_endpoint(
 
                             # Build WAV
                             audio_data = np.concatenate(speech_buf)
+                            audio_duration_ms = len(audio_data) / SAMPLE_RATE * 1000
                             wav_buf = io.BytesIO()
                             with wave.open(wav_buf, "wb") as wf:
                                 wf.setnchannels(1)
@@ -250,6 +251,7 @@ async def study_endpoint(
                                     transcript, prev_model_answer, prev_question,
                                     topic, mode, stt_ms, llm_ms, tts_ms,
                                     prev_correct_option=prev_correct_option,
+                                    audio_duration_ms=audio_duration_ms,
                                 )
 
                             else:

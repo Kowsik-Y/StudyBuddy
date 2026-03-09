@@ -30,7 +30,7 @@ interface Session {
 interface TopicStat {
     topic: string; mode: string; avg_score: number; avg_wer: number; session_count: number;
 }
-interface LatAvg { session_id: string; stt_ms: number; llm_ms: number; tts_ms: number; total_ms: number; }
+interface LatAvg { session_id: string; stt_ms: number; llm_ms: number; tts_ms: number; total_ms: number; tat_ms: number; inverse_rtf: number | null; }
 interface Summary { topic_stats: TopicStat[]; trend: Session[]; latency: LatAvg[]; }
 
 export default function AnalyticsPage() {
@@ -90,6 +90,22 @@ export default function AnalyticsPage() {
         TTS: +l.tts_ms.toFixed(0),
     }));
 
+    // TAT & Inverse RTF chart
+    const perfData = (summary?.latency ?? []).map((l, i) => ({
+        n: i + 1,
+        TAT: +l.tat_ms.toFixed(0),
+        InvRTF: l.inverse_rtf != null ? +l.inverse_rtf.toFixed(2) : null,
+    }));
+
+    const avgTAT = summary?.latency?.length
+        ? (summary.latency.reduce((a, b) => a + (b.tat_ms ?? 0), 0) / summary.latency.length).toFixed(0)
+        : null;
+    const avgInvRTF = (() => {
+        const valid = (summary?.latency ?? []).filter(l => l.inverse_rtf != null);
+        if (!valid.length) return null;
+        return (valid.reduce((a, b) => a + (b.inverse_rtf ?? 0), 0) / valid.length).toFixed(2);
+    })();
+
     return (
         <div className="min-h-screen bg-gray-50 py-10 px-4">
             <div className="max-w-3xl mx-auto flex flex-col gap-8 min-w-0 overflow-x-hidden">
@@ -143,6 +159,22 @@ export default function AnalyticsPage() {
                     </div>
                 )}
 
+                {/* Inverse RTF + TAT stats */}
+                {(avgTAT != null || avgInvRTF != null) && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Avg Turn Around Time</p>
+                            <p className="text-2xl font-bold text-gray-800">{avgTAT != null ? `${avgTAT} ms` : '—'}</p>
+                            <p className="text-[10px] text-gray-400 mt-1">STT + LLM + TTS end-to-end</p>
+                        </div>
+                        <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Avg Inverse RTF</p>
+                            <p className="text-2xl font-bold text-gray-800">{avgInvRTF != null ? `${avgInvRTF}×` : '—'}</p>
+                            <p className="text-[10px] text-gray-400 mt-1">Audio duration ÷ STT time (higher = faster)</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Score + WER line chart */}
                 {trendData.length > 0 && (
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 overflow-hidden">
@@ -179,6 +211,28 @@ export default function AnalyticsPage() {
                                     <Bar dataKey="LLM" stackId="a" fill="#7c3aed" />
                                     <Bar dataKey="TTS" stackId="a" fill="#10b981" />
                                 </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* Turn Around Time & Inverse RTF chart */}
+                {perfData.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 overflow-hidden">
+                        <p className="text-sm font-semibold text-gray-700 mb-1">Turn Around Time &amp; Inverse RTF per Session</p>
+                        <p className="text-[11px] text-gray-400 mb-4">TAT (ms) = total pipeline delay &nbsp;·&nbsp; Inverse RTF = audio duration ÷ STT time (higher is better)</p>
+                        <div className="w-full">
+                            <ResponsiveContainer width="100%" height={220}>
+                                <LineChart data={perfData} margin={{ top: 5, left: 10, right: 20, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis dataKey="n" tick={{ fontSize: 11 }} label={{ value: 'Session', position: 'insideBottom', offset: -10, fontSize: 11 }} />
+                                    <YAxis yAxisId="tat" tick={{ fontSize: 11 }} width={55} label={{ value: 'TAT (ms)', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                                    <YAxis yAxisId="rtf" orientation="right" tick={{ fontSize: 11 }} width={45} label={{ value: 'Inv RTF', angle: 90, position: 'insideRight', fontSize: 10 }} />
+                                    <Tooltip />
+                                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                                    <Line yAxisId="tat" type="monotone" dataKey="TAT" stroke="#f43f5e" dot={false} name="TAT (ms)" connectNulls strokeWidth={2} />
+                                    <Line yAxisId="rtf" type="monotone" dataKey="InvRTF" stroke="#0ea5e9" dot={false} name="Inverse RTF" connectNulls strokeWidth={2} />
+                                </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>

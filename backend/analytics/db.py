@@ -47,14 +47,15 @@ CREATE TABLE IF NOT EXISTS evaluations (
 
 CREATE_LATENCY = """
 CREATE TABLE IF NOT EXISTS latency_logs (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id  TEXT NOT NULL,
-    turn        INTEGER NOT NULL,
-    stt_ms      REAL,
-    llm_ms      REAL,
-    tts_ms      REAL,
-    total_ms    REAL,
-    timestamp   TEXT NOT NULL,
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id        TEXT NOT NULL,
+    turn              INTEGER NOT NULL,
+    stt_ms            REAL,
+    llm_ms            REAL,
+    tts_ms            REAL,
+    total_ms          REAL,
+    audio_duration_ms REAL,
+    timestamp         TEXT NOT NULL,
     FOREIGN KEY (session_id) REFERENCES sessions(id)
 );
 """
@@ -66,6 +67,11 @@ async def init_db():
         await db.execute(CREATE_SESSIONS)
         await db.execute(CREATE_EVALUATIONS)
         await db.execute(CREATE_LATENCY)
+        # Migrate existing DBs that lack the audio_duration_ms column
+        try:
+            await db.execute("ALTER TABLE latency_logs ADD COLUMN audio_duration_ms REAL")
+        except Exception:
+            pass  # column already exists
         await db.commit()
 
 
@@ -121,14 +127,16 @@ async def insert_latency(
     stt_ms: float,
     llm_ms: float,
     tts_ms: float,
+    audio_duration_ms: float = 0.0,
 ) -> None:
     total_ms = stt_ms + llm_ms + tts_ms
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """INSERT INTO latency_logs
-               (session_id, turn, stt_ms, llm_ms, tts_ms, total_ms, timestamp)
-               VALUES (?,?,?,?,?,?,?)""",
+               (session_id, turn, stt_ms, llm_ms, tts_ms, total_ms, audio_duration_ms, timestamp)
+               VALUES (?,?,?,?,?,?,?,?)""",
             (session_id, turn, stt_ms, llm_ms, tts_ms, total_ms,
+             audio_duration_ms if audio_duration_ms > 0 else None,
              datetime.utcnow().isoformat()),
         )
         await db.commit()
@@ -197,10 +205,14 @@ async def get_summary():
         ) as cur:
             trend = [dict(r) for r in await cur.fetchall()]
 
-        # Avg latency per session
+        # Avg latency per session (include inverse RTF and TAT)
         async with db.execute(
-            """SELECT session_id, AVG(stt_ms) as stt_ms, AVG(llm_ms) as llm_ms,
-               AVG(tts_ms) as tts_ms, AVG(total_ms) as total_ms
+            """SELECT session_id,
+               AVG(stt_ms) as stt_ms, AVG(llm_ms) as llm_ms,
+               AVG(tts_ms) as tts_ms, AVG(total_ms) as total_ms,
+               AVG(total_ms) as tat_ms,
+               AVG(CASE WHEN stt_ms > 0 AND audio_duration_ms > 0
+                        THEN audio_duration_ms / stt_ms ELSE NULL END) as inverse_rtf
                FROM latency_logs GROUP BY session_id"""
         ) as cur:
             latency = [dict(r) for r in await cur.fetchall()]

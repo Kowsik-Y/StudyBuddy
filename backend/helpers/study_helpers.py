@@ -163,18 +163,25 @@ async def handle_scoring(
     llm_ms: float,
     tts_ms: float,
     prev_correct_option: str = "",
+    audio_duration_ms: float = 0.0,
 ) -> None:
     """
     Compute WER + rubric scores, send score/latency events, persist to DB.
     Only scores if prev_model_answer is non-empty.
     """
-    await send({
+    tat_ms = stt_ms + llm_ms + tts_ms
+    inverse_rtf = (audio_duration_ms / stt_ms) if stt_ms > 0 and audio_duration_ms > 0 else None
+    latency_event: dict = {
         "type":   "latency",
         "stt_ms": round(stt_ms, 1),
         "llm_ms": round(llm_ms, 1),
         "tts_ms": round(tts_ms, 1),
-    })
-    await insert_latency(session_id, turn_counter, stt_ms, llm_ms, tts_ms)
+        "tat_ms": round(tat_ms, 1),
+    }
+    if inverse_rtf is not None:
+        latency_event["inverse_rtf"] = round(inverse_rtf, 3)
+    await send(latency_event)
+    await insert_latency(session_id, turn_counter, stt_ms, llm_ms, tts_ms, audio_duration_ms)
 
     if not prev_model_answer:
         return

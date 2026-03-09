@@ -450,7 +450,7 @@ def respond(user_text: str, client: OpenAI, model: str = "gpt-4.1-nano") -> str:
 
         # Handle tool calls
         if msg.tool_calls:
-            memory.append(msg)
+            memory.append(msg.model_dump(exclude_none=True))
             for tc in msg.tool_calls:
                 fn_name = tc.function.name
                 args = json.loads(tc.function.arguments or "{}")
