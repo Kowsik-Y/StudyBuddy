@@ -16,7 +16,7 @@ import tempfile
 from faster_whisper import WhisperModel
 
 
-model_size = "base.en"
+model_size = "base"
 whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
 print("Whisper model loaded!")
 
@@ -110,7 +110,7 @@ def listen_for_speech(assistant_speaking):
     return None
 
 
-def speech_to_text(audio_data, client: OpenAI = None):
+def speech_to_text(audio_data, client: OpenAI = None, language: str = "en"):
     
     print("📝 Transcribing...Fast Whisper...")
     
@@ -126,7 +126,7 @@ def speech_to_text(audio_data, client: OpenAI = None):
     try:
         segments, info = whisper_model.transcribe(
             temp_path,
-            language="en",
+            language=language,
             beam_size=5
         )
         transcript = " ".join([segment.text for segment in segments])

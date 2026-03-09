@@ -109,31 +109,68 @@ async def _stream_edge_tts(text: str):
             os.remove(temp_path)
 
 
+# ── Voice mapping: edge-tts names → OpenAI voices ────────────────────────────
+_VOICE_MAP: dict[str, str] = {
+    "en-US-AriaNeural":     "nova",
+    "en-US-GuyNeural":      "onyx",
+    "en-US-JennyNeural":    "nova",
+    "ta-IN-PallaviNeural":  "alloy",   # OpenAI has no Tamil; nearest fallback
+}
+_DEFAULT_OAI_VOICE = "coral"
+
 # ── WebServer helper ──────────────────────────────────────────────────────────
+
+def _get_tts_client() -> OpenAI:
+    """
+    Returns an OpenAI client pointed directly at api.openai.com for TTS.
+    The LiteLLM proxy (OPENAI_BASE_URL) does not support audio.speech endpoints,
+    so TTS always talks to OpenAI directly using NVIDIA_API_KEY as a direct
+    OpenAI key if available, otherwise falls back to edge-tts.
+    """
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), "..", "api.env"))
+    # Prefer a dedicated TTS key; fall back to the main API key (sk- required)
+    tts_key = os.getenv("TTS_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+    return OpenAI(api_key=tts_key)  # no custom base_url → real OpenAI
+
 
 async def to_bytes(text: str, voice: str = "en-US-AriaNeural") -> bytes:
     """
-    Generate TTS with edge-tts and return raw MP3 bytes (no disk I/O).
-    Use this in the async FastAPI / WebSocket pipeline.
+    Generate TTS with OpenAI gpt-4o-mini-tts and return raw MP3 bytes.
+    Falls back to edge-tts if the OpenAI TTS call fails.
     """
-    import io as _io
     text = _normalize_for_tts(text)
-    communicate = edge_tts.Communicate(text, voice)
-    buf = _io.BytesIO()
-    async for chunk in communicate.stream():
-        if chunk["type"] == "audio":
-            buf.write(chunk["data"])
-    return buf.getvalue()
+    oai_voice = _VOICE_MAP.get(voice, _DEFAULT_OAI_VOICE)
+    try:
+        tts_client = _get_tts_client()
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: tts_client.audio.speech.create(
+                model="gpt-4o-mini-tts",
+                voice=oai_voice,
+                input=text,
+                response_format="mp3",
+            ),
+        )
+        return response.content
+    except Exception as e:
+        print(f"⚠️ OpenAI TTS failed ({e}), falling back to edge-tts")
+        import io as _io
+        communicate = edge_tts.Communicate(text, voice)
+        buf = _io.BytesIO()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                buf.write(chunk["data"])
+        return buf.getvalue()
 
 
 async def stream_bytes(text: str, voice: str = "en-US-AriaNeural"):
     """
-    Async generator — yields raw MP3 byte chunks from edge-tts as they arrive.
-    Use this for minimum time-to-first-audio: the caller can forward each chunk
-    over a WebSocket without waiting for the whole sentence to be synthesised.
+    Async generator — yields raw MP3 byte chunks.
+    Uses OpenAI gpt-4o-mini-tts, falls back to edge-tts on failure.
     """
-    text = _normalize_for_tts(text)
-    communicate = edge_tts.Communicate(text, voice)
-    async for chunk in communicate.stream():
-        if chunk["type"] == "audio" and chunk["data"]:
-            yield chunk["data"]
+    data = await to_bytes(text, voice)
+    chunk_size = 1096
+    for i in range(0, len(data), chunk_size):
+        yield data[i:i + chunk_size]

@@ -12,6 +12,7 @@ import LatencyBadge from '../../components/LatencyBadge';
 import Timer from '../../components/Timer';
 import LanguageSelector from '../../components/LanguageSelector';
 import ControlCard from '@/components/Control-card';
+import BuddyCharacter from '@/components/BuddyCharcter';
 
 const BACKEND = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8000';
 const BACKEND_HTTP = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
@@ -89,8 +90,11 @@ export default function VivaPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 py-10 px-4">
-            <div className="max-w-xl mx-auto flex flex-col gap-6">
-
+            <div className="max-w-xl mx-auto flex flex-col gap-6 relative">
+                <BuddyCharacter
+                    isSpeaking={isSpeaking}
+                    isThinking={isThinking || isTextAsking}
+                    isListening={isActive} />
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <Link href="/" className="p-2 rounded-xl hover:bg-gray-200 transition-colors">

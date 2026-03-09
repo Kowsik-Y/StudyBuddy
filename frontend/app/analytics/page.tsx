@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
     const trendData = (summary?.trend ?? []).slice().reverse().map((s, i) => ({
         n: i + 1,
         score: s.avg_score != null ? +s.avg_score.toFixed(2) : 0,
-        wer: s.avg_wer != null ? +(s.avg_wer * 100).toFixed(1) : 0,
+        wer: s.avg_wer != null ? +Math.min(100, s.avg_wer * 100).toFixed(1) : 0,
         mode: s.mode,
     }));
 
@@ -147,7 +147,7 @@ export default function AnalyticsPage() {
                             },
                             {
                                 label: 'Avg WER', val: sessions.length
-                                    ? (sessions.reduce((a, b) => (a + (b.avg_wer ?? 0)), 0) / sessions.length * 100).toFixed(0) + '%'
+                                    ? Math.min(100, sessions.reduce((a, b) => (a + (b.avg_wer ?? 0)), 0) / sessions.length * 100).toFixed(0) + '%'
                                     : '—'
                             },
                         ].map(s => (
@@ -289,13 +289,32 @@ export default function AnalyticsPage() {
                                         <div className="bg-gray-50 rounded-xl p-4 mb-2 text-xs text-gray-600">
                                             <p className="font-semibold text-gray-700 mb-2">Turn-by-turn breakdown</p>
                                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                            {((detail as any).evaluations ?? []).map((e: any) => (
-                                                <div key={e.id} className="flex flex-col gap-0.5 mb-3 border-b border-gray-200 pb-2">
-                                                    <p><span className="font-medium">Turn {e.turn}</span> — Score: {e.total_score?.toFixed(1)}/10 · WER: {(e.wer * 100).toFixed(0)}%</p>
-                                                    <p className="text-gray-500 line-clamp-2">Student: {e.student_text}</p>
-                                                    <p className="text-indigo-600">{e.feedback}</p>
-                                                </div>
-                                            ))}
+                                            {((detail as any).evaluations ?? []).map((e: any) => {
+                                                const werPct = e.wer != null ? Math.min(100, +(e.wer * 100).toFixed(0)) : null;
+                                                const werColor = werPct == null ? 'text-gray-400'
+                                                    : werPct <= 20 ? 'text-emerald-600 font-semibold'
+                                                        : werPct <= 50 ? 'text-amber-500 font-semibold'
+                                                            : 'text-red-500 font-semibold';
+                                                return (
+                                                    <div key={e.id} className="flex flex-col gap-1 mb-3 border-b border-gray-200 pb-3">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-semibold text-gray-700">Turn {e.turn}</span>
+                                                            <span className="text-gray-400">·</span>
+                                                            <span className="text-gray-600">Score: <span className="font-semibold text-gray-800">{e.total_score?.toFixed(1)}/10</span></span>
+                                                            <span className="text-gray-400">·</span>
+                                                            <span className="text-gray-600">WER: <span className={werColor}>{werPct != null ? `${werPct}%` : '—'}</span></span>
+                                                        </div>
+                                                        <p className="text-gray-500"><span className="text-gray-400 uppercase text-[10px] tracking-wider mr-1">Student</span>{e.student_text}</p>
+                                                        {e.model_answer && (
+                                                            <p className="text-gray-700 bg-indigo-50 rounded-lg px-2 py-1">
+                                                                <span className="text-[10px] uppercase tracking-wider text-indigo-400 mr-1">Ground Truth</span>
+                                                                {e.model_answer}
+                                                            </p>
+                                                        )}
+                                                        <p className="text-indigo-600 italic">{e.feedback}</p>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </React.Fragment>

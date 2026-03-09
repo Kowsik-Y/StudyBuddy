@@ -21,7 +21,7 @@ def compute_wer(reference: str, hypothesis: str) -> float:
     if not reference or not hypothesis:
         return 0.0
     try:
-        return round(float(jiwer_wer(reference.lower().strip(), hypothesis.lower().strip())), 4)
+        return round(min(1.0, float(jiwer_wer(reference.lower().strip(), hypothesis.lower().strip()))), 4)
     except Exception as e:
         _logger.warning(f"WER computation failed: {e}")
         return 0.0
