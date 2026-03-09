@@ -1,5 +1,5 @@
 
-# SpeechRecognition
+# Voice AI Study Buddy
 
 A full-stack speech recognition and voice-assistant project with a FastAPI backend, a Next.js frontend, and a Chrome extension for microphone setup and capture.
 
@@ -90,6 +90,63 @@ npm run dev
 - STT code lives in `backend/stt/` and TTS in `backend/text_to_speech/`.
 - Analytics and evaluation helpers are in `backend/analytics/` and `backend/evaluation/`.
 
+## Architecture
+
+This project is organised as a typical full-stack voice assistant with clear separation of concerns:
+
+- Client (Frontend + Chrome extension):
+	- Next.js frontend (`frontend/`) provides the UI, playback, and controls.
+	- Chrome extension (`chrome-extension/`) can capture browser audio and send it to the backend for processing.
+
+- Server (Backend):
+	- FastAPI app (`backend/fastapi_server.py`, `backend/main.py`) accepts WebSocket/WebRTC connections, REST routes, and coordinates STT/TTS flows.
+	- `webrtc_handler.py` manages media streams and signaling for real-time audio.
+	- `stt/` contains speech-to-text integration and streaming logic.
+	- `text_to_speech/` provides TTS rendering for assistant responses.
+	- `analytics/` and `evaluation/` collect metrics and evaluate transcripts/LLM responses.
+
+- Data & Flow:
+	1. User records or streams audio from the browser (frontend or extension).
+	2. Audio is forwarded to the FastAPI backend via WebRTC or WebSocket.
+	3. Backend routes audio to STT; interim transcripts are streamed back to the client.
+	4. Transcripts may be processed by LLMs or business logic in `llm_response/` and stored or evaluated.
+	5. When needed, TTS renders spoken responses and streams them back to the client.
+
+This modular architecture lets you replace STT, TTS, or LLM providers with minimal changes, and scales by separating real-time media handling from stateless API endpoints.
+
+### Architecture Diagram
+
+```mermaid
+graph LR
+	subgraph Client
+		FE[Next.js Frontend]
+		CE[Chrome Extension]
+	end
+
+	subgraph Server
+		API[FastAPI Backend]
+		WE[webrtc_handler]
+		STT[STT Service]
+		LLM[LLM / llm_response]
+		TTS[TTS Service]
+		AN[Analytics / DB]
+	end
+
+	FE -->|audio| API
+	CE -->|audio| API
+	API --> WE
+	WE --> STT
+	STT -->|transcript| API
+	API --> LLM
+	LLM --> API
+	API --> TTS
+	TTS -->|audio| FE
+	API --> AN
+
+``` 
+
+The diagram shows client components sending audio to the backend, where real-time handling, STT, LLM processing, TTS, and analytics occur.
+
 ## Contributing
 
 Feel free to open issues or pull requests. For local contributions:
@@ -99,7 +156,7 @@ Feel free to open issues or pull requests. For local contributions:
 
 ## License
 
-Specify your project license here (e.g., MIT).
+This project is available under the MIT License — see [LICENSE](LICENSE).
 
 ---
 
