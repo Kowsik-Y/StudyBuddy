@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Speech Assistant</title>
+  <title>Study Buddy</title>
   <link rel="stylesheet" href="sidepanel.css" />
 </head>
 <body>
 
   <!-- ── Header ──────────────────────────────────────────────────────────── -->
   <header class="app-header">
-    <span class="app-icon">🎤</span>
-    <span class="app-title">AI Speech Assistant</span>
+    <span class="app-title">Study Buddy</span>
   </header>
 
   <!-- ── Tab bar ─────────────────────────────────────────────────────────── -->
@@ -47,18 +46,18 @@
 
       <!-- mic-permission helper — shown when mic is blocked or dismissed -->
       <div id="mic-permission-banner" class="mic-banner" hidden>
-        <div class="mic-banner-title">🎙 Microphone access needed</div>
+        <div class="mic-banner-title">Microphone access needed</div>
         <div class="mic-banner-debug" style="font-size:10px;color:#f59e0b;font-family:monospace;margin-bottom:4px"></div>
         <ol class="mic-banner-steps"></ol>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
           <button id="mic-retry-btn" class="btn btn-primary">↺ Retry</button>
-          <button id="mic-open-setup-btn" class="btn btn-secondary" hidden>🎤 Open Mic Setup Page</button>
-          <button id="mic-open-settings-btn" class="btn btn-secondary">⚙️ Open Chrome Mic Settings</button>
+          <button id="mic-open-setup-btn" class="btn btn-secondary" hidden>Open Mic Setup Page</button>
+          <button id="mic-open-settings-btn" class="btn btn-secondary">Open Chrome Mic Settings</button>
         </div>
       </div>
 
       <div class="action-bar">
-        <button id="voice-btn" class="btn btn-primary btn-wide">🎤 Start Listening</button>
+        <button id="voice-btn" class="btn btn-primary btn-wide">Start Listening</button>
         <button id="voice-clear" class="btn btn-ghost">Clear</button>
       </div>
     </section>
@@ -81,7 +80,7 @@
       <div id="explain-latency" class="latency-bar"></div>
 
       <div class="action-bar">
-        <button id="explain-btn" class="btn btn-primary btn-wide">🎤 Start Session</button>
+        <button id="explain-btn" class="btn btn-primary btn-wide">Start Session</button>
         <button id="explain-clear" class="btn btn-ghost">Clear</button>
       </div>
     </section>
@@ -104,7 +103,7 @@
       <div id="quiz-latency" class="latency-bar"></div>
 
       <div class="action-bar">
-        <button id="quiz-btn" class="btn btn-primary btn-wide">🎤 Start Session</button>
+        <button id="quiz-btn" class="btn btn-primary btn-wide">Start Session</button>
         <button id="quiz-clear" class="btn btn-ghost">Clear</button>
       </div>
     </section>
@@ -127,7 +126,7 @@
       <div id="viva-latency" class="latency-bar"></div>
 
       <div class="action-bar">
-        <button id="viva-btn" class="btn btn-primary btn-wide">🎤 Start Session</button>
+        <button id="viva-btn" class="btn btn-primary btn-wide">Start Session</button>
         <button id="viva-clear" class="btn btn-ghost">Clear</button>
       </div>
     </section>
@@ -143,7 +142,7 @@
         </div>
         <div class="divider-or">— or —</div>
         <div class="input-row">
-          <button id="video-upload-btn" class="btn btn-secondary btn-wide">📁 Upload Video / Audio</button>
+          <button id="video-upload-btn" class="btn btn-secondary btn-wide"> Upload Video / Audio</button>
           <input id="video-file" type="file" accept="video/*,audio/*" hidden />
         </div>
         <div id="video-status" class="status-text"></div>

@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🎤 Voice Assistant - Quick Start Setup"
+echo "Voice Assistant - Quick Start Setup"
 echo "======================================"
 echo ""
 

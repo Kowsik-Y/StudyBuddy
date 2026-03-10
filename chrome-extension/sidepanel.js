@@ -278,7 +278,7 @@ function stopVoice() {
   cleanupVoice();
   setStatusBadge('voice-status', 'idle', 'Idle');
   const btn = document.getElementById('voice-btn');
-  if (btn) { btn.className = 'btn btn-primary btn-wide'; btn.textContent = '🎤 Start Listening'; btn.disabled = false; }
+  if (btn) { btn.className = 'btn btn-primary btn-wide'; btn.textContent = 'Start Listening'; btn.disabled = false; }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -367,7 +367,7 @@ async function startStudy(mode) {
     setStatusBadge(`${mode}-status`, 'error', err.message);
     btn.disabled = false;
     btn.className = 'btn btn-primary btn-wide';
-    btn.textContent = '🎤 Start Session';
+    btn.textContent = 'Start Session';
     cleanupStudy(mode);
   }
 }
@@ -486,7 +486,7 @@ function stopStudy(mode) {
   cleanupStudy(mode);
   setStatusBadge(`${mode}-status`, 'idle', 'Idle');
   const btn = document.getElementById(`${mode}-btn`);
-  if (btn) { btn.className = 'btn btn-primary btn-wide'; btn.textContent = '🎤 Start Session'; btn.disabled = false; }
+  if (btn) { btn.className = 'btn btn-primary btn-wide'; btn.textContent = 'Start Session'; btn.disabled = false; }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
