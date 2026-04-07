@@ -6,6 +6,7 @@ Analytics REST routes
   DELETE /analytics/reset
 """
 
+from typing import Optional
 from fastapi import APIRouter
 from analytics.db import (
     get_summary, get_sessions, get_session_detail, reset_analytics,
@@ -20,8 +21,8 @@ async def analytics_summary():
 
 
 @router.get("/analytics/sessions")
-async def analytics_sessions():
-    return await get_sessions()
+async def analytics_sessions(limit: Optional[int] = None):
+    return await get_sessions(limit=limit)
 
 
 @router.get("/analytics/session/{session_id}")

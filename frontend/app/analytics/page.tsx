@@ -10,7 +10,7 @@ import {
     CartesianGrid, ResponsiveContainer, Legend,
 } from 'recharts';
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 const MODE_ICON: Record<string, React.ReactNode> = {
     explain: <BookOpen size={13} className="text-indigo-500" />,
@@ -32,21 +32,37 @@ interface TopicStat {
 }
 interface LatAvg { session_id: string; stt_ms: number; llm_ms: number; tts_ms: number; total_ms: number; tat_ms: number; inverse_rtf: number | null; }
 interface Summary { topic_stats: TopicStat[]; trend: Session[]; latency: LatAvg[]; }
+interface ChatMessage { id: number; turn: number; role: 'user' | 'assistant' | string; message: string; timestamp: string; }
 
 export default function AnalyticsPage() {
     const [summary, setSummary] = useState<Summary | null>(null);
     const [sessions, setSessions] = useState<Session[]>([]);
     const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
     const [detailId, setDetailId] = useState('');
+    const [detailLoadingId, setDetailLoadingId] = useState('');
+    const [detailErrorId, setDetailErrorId] = useState('');
     const [loading, setLoading] = useState(false);
     const [resetDone, setResetDone] = useState(false);
+
+    const avgScoreValue = (() => {
+        const scored = sessions.filter(s => s.avg_score != null);
+        if (!scored.length) return null;
+        return (scored.reduce((acc, s) => acc + (s.avg_score ?? 0), 0) / scored.length).toFixed(1);
+    })();
+
+    const avgWerValue = (() => {
+        const withWer = sessions.filter(s => s.avg_wer != null);
+        if (!withWer.length) return null;
+        const avg = withWer.reduce((acc, s) => acc + (s.avg_wer ?? 0), 0) / withWer.length;
+        return Math.min(100, avg * 100).toFixed(0);
+    })();
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [sumRes, sessRes] = await Promise.all([
-                fetch(`http://localhost:8000/analytics/summary`),
-                fetch(`http://localhost:8000/analytics/sessions`),
+                fetch(`${API}/analytics/summary`),
+                fetch(`${API}/analytics/sessions`),
             ]);
             setSummary(await sumRes.json());
             setSessions(await sessRes.json());
@@ -60,10 +76,28 @@ export default function AnalyticsPage() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     async function openDetail(id: string) {
-        if (detailId === id) { setDetail(null); setDetailId(''); return; }
-        const res = await fetch(`${API}/analytics/session/${id}`);
-        setDetail(await res.json());
-        setDetailId(id);
+        if (detailId === id) {
+            setDetail(null);
+            setDetailId('');
+            setDetailLoadingId('');
+            setDetailErrorId('');
+            return;
+        }
+        setDetailLoadingId(id);
+        setDetailErrorId('');
+        try {
+            const res = await fetch(`${API}/analytics/session/${encodeURIComponent(id)}`);
+            if (!res.ok) throw new Error(`Session detail failed: ${res.status}`);
+            const data = await res.json();
+            setDetail(data);
+            setDetailId(id);
+        } catch {
+            setDetail(null);
+            setDetailId('');
+            setDetailErrorId(id);
+        } finally {
+            setDetailLoadingId('');
+        }
     }
 
     async function doReset() {
@@ -141,13 +175,13 @@ export default function AnalyticsPage() {
                         {[
                             { label: 'Sessions', val: sessions.length },
                             {
-                                label: 'Avg Score', val: sessions.length
-                                    ? (sessions.reduce((a, b) => (a + (b.avg_score ?? 0)), 0) / sessions.length).toFixed(1) + '/10'
+                                label: 'Avg Score', val: avgScoreValue != null
+                                    ? `${avgScoreValue}/10`
                                     : '—'
                             },
                             {
-                                label: 'Avg WER', val: sessions.length
-                                    ? Math.min(100, sessions.reduce((a, b) => (a + (b.avg_wer ?? 0)), 0) / sessions.length * 100).toFixed(0) + '%'
+                                label: 'Avg WER', val: avgWerValue != null
+                                    ? `${avgWerValue}%`
                                     : '—'
                             },
                         ].map(s => (
@@ -285,8 +319,40 @@ export default function AnalyticsPage() {
                                         </span>
                                     </button>
                                     {/* Expanded detail */}
+                                    {detailLoadingId === s.id && (
+                                        <div className="bg-gray-50 rounded-xl p-4 mb-2 text-xs text-gray-500">
+                                            Loading session details...
+                                        </div>
+                                    )}
+                                    {detailErrorId === s.id && detailLoadingId !== s.id && (
+                                        <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-2 text-xs text-red-600">
+                                            Could not load this session detail. Please try refresh and click again.
+                                        </div>
+                                    )}
                                     {detailId === s.id && detail && (
                                         <div className="bg-gray-50 rounded-xl p-4 mb-2 text-xs text-gray-600">
+                                            <p className="font-semibold text-gray-700 mb-2">Chat History</p>
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            {((detail as any).chat_history ?? []).length > 0 ? (
+                                                <div className="flex flex-col gap-2 mb-4">
+                                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                    {((detail as any).chat_history as ChatMessage[]).map((m) => (
+                                                        <div key={m.id} className="border border-gray-200 rounded-lg bg-white px-3 py-2">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className={`text-[10px] uppercase tracking-wider font-semibold ${m.role === 'user' ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                                                                    {m.role === 'user' ? 'Student' : 'Assistant'}
+                                                                </span>
+                                                                <span className="text-gray-300">|</span>
+                                                                <span className="text-[10px] text-gray-400">Turn {m.turn}</span>
+                                                            </div>
+                                                            <p className="text-xs text-gray-700 whitespace-pre-wrap">{m.message}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-[11px] text-gray-400 mb-4">No chat messages stored for this session.</p>
+                                            )}
+
                                             <p className="font-semibold text-gray-700 mb-2">Turn-by-turn breakdown</p>
                                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                             {((detail as any).evaluations ?? []).map((e: any) => {
@@ -315,6 +381,10 @@ export default function AnalyticsPage() {
                                                     </div>
                                                 );
                                             })}
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            {((detail as any).evaluations ?? []).length === 0 && (
+                                                <p className="text-[11px] text-gray-400">No scoring rows for this session yet.</p>
+                                            )}
                                         </div>
                                     )}
                                 </React.Fragment>

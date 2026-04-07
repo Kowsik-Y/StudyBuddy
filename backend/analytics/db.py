@@ -60,6 +60,18 @@ CREATE TABLE IF NOT EXISTS latency_logs (
 );
 """
 
+CREATE_CHAT_MESSAGES = """
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id    TEXT NOT NULL,
+    turn          INTEGER NOT NULL,
+    role          TEXT NOT NULL,
+    message       TEXT NOT NULL,
+    timestamp     TEXT NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES sessions(id)
+);
+"""
+
 
 async def init_db():
     """Create tables if they don't exist."""
@@ -67,6 +79,7 @@ async def init_db():
         await db.execute(CREATE_SESSIONS)
         await db.execute(CREATE_EVALUATIONS)
         await db.execute(CREATE_LATENCY)
+        await db.execute(CREATE_CHAT_MESSAGES)
         # Migrate existing DBs that lack the audio_duration_ms column
         try:
             await db.execute("ALTER TABLE latency_logs ADD COLUMN audio_duration_ms REAL")
@@ -151,15 +164,39 @@ async def close_session(session_id: str) -> None:
         await db.commit()
 
 
+async def insert_chat_message(
+    session_id: str,
+    turn: int,
+    role: str,
+    message: str,
+) -> None:
+    if not message:
+        return
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO chat_messages
+               (session_id, turn, role, message, timestamp)
+               VALUES (?,?,?,?,?)""",
+            (session_id, turn, role, message, datetime.utcnow().isoformat()),
+        )
+        await db.commit()
+
+
 # ── Read helpers ──────────────────────────────────────────────────────────────
 
-async def get_sessions(limit: int = 50):
+async def get_sessions(limit: Optional[int] = None):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM sessions ORDER BY started_at DESC LIMIT ?", (limit,)
-        ) as cur:
-            rows = await cur.fetchall()
+        if limit is None or limit <= 0:
+            async with db.execute(
+                "SELECT * FROM sessions ORDER BY started_at DESC"
+            ) as cur:
+                rows = await cur.fetchall()
+        else:
+            async with db.execute(
+                "SELECT * FROM sessions ORDER BY started_at DESC LIMIT ?", (limit,)
+            ) as cur:
+                rows = await cur.fetchall()
     return [dict(r) for r in rows]
 
 
@@ -178,7 +215,15 @@ async def get_session_detail(session_id: str):
             "SELECT * FROM latency_logs WHERE session_id=? ORDER BY turn", (session_id,)
         ) as cur:
             latency = [dict(r) for r in await cur.fetchall()]
-    return {"session": session, "evaluations": evals, "latency": latency}
+        try:
+            async with db.execute(
+                "SELECT * FROM chat_messages WHERE session_id=? ORDER BY turn, id", (session_id,)
+            ) as cur:
+                chat_history = [dict(r) for r in await cur.fetchall()]
+        except Exception:
+            # Backward compatibility for older DBs/processes where chat_messages is not available.
+            chat_history = []
+    return {"session": session, "evaluations": evals, "latency": latency, "chat_history": chat_history}
 
 
 async def get_summary():
@@ -222,6 +267,7 @@ async def get_summary():
 
 async def reset_analytics():
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM chat_messages")
         await db.execute("DELETE FROM latency_logs")
         await db.execute("DELETE FROM evaluations")
         await db.execute("DELETE FROM sessions")

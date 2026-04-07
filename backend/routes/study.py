@@ -23,7 +23,7 @@ from config import client, MODEL, logger
 from stt.sst import transcribe_from_path
 from llm_response.llm_response import study_respond, clear_session_memory, init_session_memory_with_prompt
 from text_to_speech.tts import to_bytes as tts_to_bytes
-from analytics.db import insert_session, close_session
+from analytics.db import insert_session, close_session, insert_chat_message
 from helpers.study_helpers import run_streaming_pipeline, handle_scoring  # noqa: F401
 
 router = APIRouter()
@@ -119,6 +119,7 @@ async def study_endpoint(
             "audio": base64.b64encode(mp3).decode(),
             "turn": turn_counter,
         })
+        await insert_chat_message(session_id, turn_counter, "assistant", result["reply"])
         is_assistant_busy = False
 
     # ── Quiz: send opening question immediately (streaming) ───────────────────
@@ -139,6 +140,7 @@ async def study_endpoint(
             "final": "false",
             "turn":  str(turn_counter),
         })
+        await insert_chat_message(session_id, turn_counter, "assistant", full_reply)
         is_assistant_busy = False
 
     await send({"type": "status", "text": "listening"})
@@ -204,6 +206,9 @@ async def study_endpoint(
                             if transcript:
                                 await send({"type": "transcript", "text": transcript})
 
+                                current_turn = turn_counter + 1
+                                await insert_chat_message(session_id, current_turn, "user", transcript)
+
                                 if mode == "explain" and not topic:
                                     topic = transcript[:60]
                                     await insert_session(session_id, mode, language, topic)
@@ -220,6 +225,7 @@ async def study_endpoint(
                                         "audio": base64.b64encode(mp3).decode(),
                                         "final": "true",
                                     })
+                                    await insert_chat_message(session_id, current_turn, "assistant", farewell)
                                     break
 
                                 prev_model_answer   = last_model_answer
@@ -236,7 +242,8 @@ async def study_endpoint(
                                 last_question       = full_reply
                                 last_model_answer   = final_meta["model_answer"]
                                 last_correct_option = final_meta.get("correct_option") or ""
-                                turn_counter     += 1
+                                turn_counter = current_turn
+                                await insert_chat_message(session_id, turn_counter, "assistant", full_reply)
 
                                 await send({
                                     "type":  "response",
