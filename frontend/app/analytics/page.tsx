@@ -45,8 +45,8 @@ export default function AnalyticsPage() {
         setLoading(true);
         try {
             const [sumRes, sessRes] = await Promise.all([
-                fetch(`${API}/analytics/summary`),
-                fetch(`${API}/analytics/sessions`),
+                fetch(`http://localhost:8000/analytics/summary`),
+                fetch(`http://localhost:8000/analytics/sessions`),
             ]);
             setSummary(await sumRes.json());
             setSessions(await sessRes.json());
