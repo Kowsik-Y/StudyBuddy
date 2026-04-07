@@ -3,7 +3,7 @@
 title: Study Buddy
 emoji: 🎓
 colorFrom: blue
-colorTo: cyan
+colorTo: indigo
 sdk: docker
 app_port: 7860
 ---
