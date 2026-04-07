@@ -16,9 +16,9 @@ export default function BuddyCharacter({
     const [blink, setBlink] = useState(false);
     const [noseWig, setNoseWig] = useState(false);
     const [heartPop, setHeartPop] = useState(false);
-    const blinkRef = useRef<ReturnType<typeof setTimeout>>();
-    const noseRef = useRef<ReturnType<typeof setTimeout>>();
-    const heartRef = useRef<ReturnType<typeof setTimeout>>();
+    const blinkRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const noseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const heartRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         const go = () => {
@@ -29,7 +29,9 @@ export default function BuddyCharacter({
             }, 3000 + Math.random() * 4500);
         };
         go();
-        return () => clearTimeout(blinkRef.current);
+        return () => {
+            if (blinkRef.current) clearTimeout(blinkRef.current);
+        };
     }, []);
 
     useEffect(() => {
@@ -41,7 +43,9 @@ export default function BuddyCharacter({
             }, 3200 + Math.random() * 5000);
         };
         go();
-        return () => clearTimeout(noseRef.current);
+        return () => {
+            if (noseRef.current) clearTimeout(noseRef.current);
+        };
     }, []);
 
     useEffect(() => {
@@ -55,7 +59,9 @@ export default function BuddyCharacter({
             };
             go();
         }
-        return () => clearTimeout(heartRef.current);
+        return () => {
+            if (heartRef.current) clearTimeout(heartRef.current);
+        };
     }, [isSpeaking, isThinking, isListening]);
 
     const mood: Mood = isSpeaking ? 'speaking' : isThinking ? 'thinking' : isListening ? 'listening' : 'idle';
