@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+    volumes:
+      - ./backend:/app
+    command: uvicorn fastapi_server:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - voice-assistant
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - backend
+    networks:
+      - voice-assistant
+
+networks:
+  voice-assistant:
+    driver: bridge

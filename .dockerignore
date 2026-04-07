@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+frontend
+chrome-extension
+backend/.venv
+backend/api.env
+backend/.env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+PROJECT_REPORT_30_PAGES.md

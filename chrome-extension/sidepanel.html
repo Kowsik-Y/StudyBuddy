@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <span class="app-title">Study Buddy</span>
+  </header>
+
+  <!-- ── Tab bar ─────────────────────────────────────────────────────────── -->
+  <nav class="tab-bar" role="tablist">
+    <button class="tab-btn active" data-tab="voice"     role="tab">Voice</button>
+    <button class="tab-btn"        data-tab="explain"   role="tab">Explain</button>
+    <button class="tab-btn"        data-tab="quiz"      role="tab">Quiz</button>
+    <button class="tab-btn"        data-tab="viva"      role="tab">Viva</button>
+    <button class="tab-btn"        data-tab="videoqa"   role="tab">Video QA</button>
+    <button class="tab-btn"        data-tab="analytics" role="tab">Analytics</button>
+    <button class="tab-btn"        data-tab="settings"  role="tab">⚙</button>
+  </nav>
+
+  <!-- ── Main content ────────────────────────────────────────────────────── -->
+  <main class="content">
+
+    <!-- ════════════ VOICE TAB ════════════ -->
+    <section id="tab-voice" class="tab-content active">
+      <div class="section-header">
+        <span id="voice-status" class="status-badge">● Idle</span>
+        <select id="voice-lang" class="lang-select" title="Language">
+          <option value="en">EN</option>
+          <option value="ta">TA</option>
+        </select>
+      </div>
+
+      <div id="voice-messages" class="messages-container"></div>
+
+      <!-- pre-flight notice: shown briefly before getUserMedia prompt appears -->
+      <div id="mic-preflight" class="mic-preflight" hidden>
+        <span>🔔 A mic permission prompt will appear at the <strong>top of the Chrome window</strong>. Click <strong style="color:#10b981">Allow</strong>.</span>
+      </div>
+
+      <!-- mic-permission helper — shown when mic is blocked or dismissed -->
+      <div id="mic-permission-banner" class="mic-banner" hidden>
+        <div class="mic-banner-title">Microphone access needed</div>
+        <div class="mic-banner-debug" style="font-size:10px;color:#f59e0b;font-family:monospace;margin-bottom:4px"></div>
+        <ol class="mic-banner-steps"></ol>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <button id="mic-retry-btn" class="btn btn-primary">↺ Retry</button>
+          <button id="mic-open-setup-btn" class="btn btn-secondary" hidden>Open Mic Setup Page</button>
+          <button id="mic-open-settings-btn" class="btn btn-secondary">Open Chrome Mic Settings</button>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="voice-btn" class="btn btn-primary btn-wide">Start Listening</button>
+        <button id="voice-clear" class="btn btn-ghost">Clear</button>
+      </div>
+    </section>
+
+    <!-- ════════════ EXPLAIN TAB ════════════ -->
+    <section id="tab-explain" class="tab-content">
+      <div class="section-header">
+        <span id="explain-status" class="status-badge">● Idle</span>
+        <select id="explain-lang" class="lang-select" title="Language">
+          <option value="en">EN</option>
+          <option value="ta">TA</option>
+        </select>
+      </div>
+      <div class="topic-row">
+        <input id="explain-topic" class="topic-input" type="text" placeholder="Topic (optional)" />
+      </div>
+
+      <div id="explain-messages" class="messages-container"></div>
+      <div id="explain-score" class="score-panel"></div>
+      <div id="explain-latency" class="latency-bar"></div>
+
+      <div class="action-bar">
+        <button id="explain-btn" class="btn btn-primary btn-wide">Start Session</button>
+        <button id="explain-clear" class="btn btn-ghost">Clear</button>
+      </div>
+    </section>
+
+    <!-- ════════════ QUIZ TAB ════════════ -->
+    <section id="tab-quiz" class="tab-content">
+      <div class="section-header">
+        <span id="quiz-status" class="status-badge">● Idle</span>
+        <select id="quiz-lang" class="lang-select" title="Language">
+          <option value="en">EN</option>
+          <option value="ta">TA</option>
+        </select>
+      </div>
+      <div class="topic-row">
+        <input id="quiz-topic" class="topic-input" type="text" placeholder="Topic (optional)" />
+      </div>
+
+      <div id="quiz-messages" class="messages-container"></div>
+      <div id="quiz-score" class="score-panel"></div>
+      <div id="quiz-latency" class="latency-bar"></div>
+
+      <div class="action-bar">
+        <button id="quiz-btn" class="btn btn-primary btn-wide">Start Session</button>
+        <button id="quiz-clear" class="btn btn-ghost">Clear</button>
+      </div>
+    </section>
+
+    <!-- ════════════ VIVA TAB ════════════ -->
+    <section id="tab-viva" class="tab-content">
+      <div class="section-header">
+        <span id="viva-status" class="status-badge">● Idle</span>
+        <select id="viva-lang" class="lang-select" title="Language">
+          <option value="en">EN</option>
+          <option value="ta">TA</option>
+        </select>
+      </div>
+      <div class="topic-row">
+        <input id="viva-topic" class="topic-input" type="text" placeholder="Topic (optional)" />
+      </div>
+
+      <div id="viva-messages" class="messages-container"></div>
+      <div id="viva-score" class="score-panel"></div>
+      <div id="viva-latency" class="latency-bar"></div>
+
+      <div class="action-bar">
+        <button id="viva-btn" class="btn btn-primary btn-wide">Start Session</button>
+        <button id="viva-clear" class="btn btn-ghost">Clear</button>
+      </div>
+    </section>
+
+    <!-- ════════════ VIDEO QA TAB ════════════ -->
+    <section id="tab-videoqa" class="tab-content">
+      <!-- Input section -->
+      <div class="card">
+        <div class="card-label">YouTube URL</div>
+        <div class="input-row">
+          <input id="yt-url" class="text-input" type="url" placeholder="https://youtu.be/..." />
+          <button id="yt-process-btn" class="btn btn-primary">▶ Process</button>
+        </div>
+        <div class="divider-or">— or —</div>
+        <div class="input-row">
+          <button id="video-upload-btn" class="btn btn-secondary btn-wide"> Upload Video / Audio</button>
+          <input id="video-file" type="file" accept="video/*,audio/*" hidden />
+        </div>
+        <div id="video-status" class="status-text"></div>
+      </div>
+
+      <!-- Transcript (collapsible) -->
+      <details id="video-transcript-details" class="transcript-details" hidden>
+        <summary>
+          <span id="video-title">Transcript</span>
+        </summary>
+        <pre id="video-transcript-text" class="transcript-text"></pre>
+      </details>
+
+      <!-- Q&A -->
+      <div id="video-qa-section" class="qa-section" hidden>
+        <div class="card-label">Ask a question about the video</div>
+        <div id="video-messages" class="messages-container video-msgs"></div>
+        <div class="input-row">
+          <input id="video-question" class="text-input" type="text" placeholder="Your question…" />
+          <button id="video-ask-btn" class="btn btn-primary">Ask</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════ ANALYTICS TAB ════════════ -->
+    <section id="tab-analytics" class="tab-content">
+      <div class="analytics-toolbar">
+        <button id="analytics-refresh" class="btn btn-secondary">↺ Refresh</button>
+        <button id="analytics-reset" class="btn btn-danger-outline">🗑 Reset</button>
+      </div>
+
+      <div id="analytics-loading" class="loading-text" hidden>Loading…</div>
+
+      <div id="analytics-content" hidden>
+        <!-- Summary cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div id="stat-sessions" class="stat-value">—</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-score" class="stat-value">—</div>
+            <div class="stat-label">Avg Score</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-wer" class="stat-value">—</div>
+            <div class="stat-label">Avg WER</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-turns" class="stat-value">—</div>
+            <div class="stat-label">Total Turns</div>
+          </div>
+        </div>
+
+        <!-- Sessions table -->
+        <div class="table-wrapper">
+          <table id="sessions-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th>Lang</th>
+                <th>Score</th>
+                <th>Turns</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════ SETTINGS TAB ════════════ -->
+    <section id="tab-settings" class="tab-content">
+      <div class="card">
+        <div class="card-label">Backend URL</div>
+        <input id="backend-url" class="text-input" type="url" placeholder="http://localhost:8000" />
+        <div class="settings-hint">Default: http://localhost:8000</div>
+
+        <div class="action-bar" style="margin-top:12px">
+          <button id="save-settings" class="btn btn-primary">Save</button>
+          <button id="test-connection" class="btn btn-secondary">Test Connection</button>
+        </div>
+
+        <div id="settings-saved"  class="feedback-msg success" hidden>✓ Saved!</div>
+        <div id="settings-error"  class="feedback-msg error"   hidden></div>
+        <div id="settings-ok"     class="feedback-msg success" hidden>✓ Backend reachable</div>
+      </div>
+    </section>
+
+  </main><!-- /content -->
+
+  <script src="api.js"></script>
+  <script src="audio.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

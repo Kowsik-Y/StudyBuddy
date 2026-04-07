@@ -1,0 +1,16 @@
+edge-tts
+fastapi
+uvicorn[standard]
+python-dotenv
+openai
+aiortc
+pydantic
+numpy
+sounddevice
+faster-whisper
+jiwer
+aiosqlite
+yt-dlp
+python-multipart
+
+
