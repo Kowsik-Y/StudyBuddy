@@ -25,11 +25,7 @@ except Exception:
 
 
 def _normalize_for_tts(text: str) -> str:
-    """
-    Fix common TTS mispronunciations before synthesis.
 
-    • N/M  → "N out of M"   (scores like 2/2 read as "February 2nd")
-    """
     # Replace score-like fractions  e.g. 2/2  4/5  10/10
     text = re.sub(r'\b(\d+)/(\d+)\b', lambda m: f"{m.group(1)} out of {m.group(2)}", text)
     return text
