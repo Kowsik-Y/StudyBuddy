@@ -1,41 +1,40 @@
 """
-Voice Assistant - Main application
-Live speech-to-speech conversation with AI assistant
+Main module compatibility wrapper.
+
+- Exposes `app` for ASGI (`uvicorn main:app`) by re-exporting from fastapi_server.
+- Retains the original CLI voice assistant via `python main.py`.
 """
 
 import os
 import threading
-from openai import OpenAI
+
 from dotenv import load_dotenv
+from openai import OpenAI
 
-# Import modules
-from stt import listen_for_speech, speech_to_text
-from text_to_speech.tts import stream_tts_and_play
-from llm_response.llm_response import run_agent_streaming
+from fastapi_server import app
 
-# Load environment variables
-load_dotenv('.env')
-
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-BASE_URL = os.getenv('OPENAI_BASE_URL')
-
-# Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY, base_url=BASE_URL)
-
-# Shared state
-assistant_speaking = threading.Event()
-
-# System memory
-memory = [
-    {
-        "role": "system",
-        "content": "You are a helpful voice assistant. Respond in English. Keep responses concise and conversational (1-3 sentences). Be friendly and natural."
-    }
-]
+# Load environment variables for CLI mode.
+load_dotenv(".env")
 
 
 def main():
     """Main conversation loop."""
+    # Delay heavy audio/STT imports so ASGI import path stays lightweight.
+    from stt import listen_for_speech, speech_to_text
+    from text_to_speech.tts import stream_tts_and_play
+    from llm_response.llm_response import run_agent_streaming
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL")
+    client = OpenAI(api_key=openai_api_key, base_url=base_url)
+    assistant_speaking = threading.Event()
+    memory = [
+        {
+            "role": "system",
+            "content": "You are a helpful voice assistant. Respond in English. Keep responses concise and conversational (1-3 sentences). Be friendly and natural.",
+        }
+    ]
+
     print("=" * 50)
     print("  🤖 Voice Assistant — Live Speech-to-Speech")
     print("=" * 50)

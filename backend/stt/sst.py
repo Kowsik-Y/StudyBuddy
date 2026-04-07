@@ -12,7 +12,11 @@ import threading
 import time
 from openai import OpenAI
 import tempfile
-from faster_whisper import WhisperModel
+
+try:
+    from faster_whisper import WhisperModel
+except Exception:
+    WhisperModel = None
 
 try:
     import sounddevice as sd
@@ -21,8 +25,21 @@ except Exception:
 
 
 model_size = "base"
-whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
-print("Whisper model loaded!")
+whisper_model = None
+
+
+def get_whisper_model():
+    """Lazily initialize faster-whisper so app import doesn't hard-fail."""
+    global whisper_model
+    if WhisperModel is None:
+        raise RuntimeError(
+            "faster-whisper is not available in this environment. "
+            "Install dependencies from backend/requirements.txt."
+        )
+    if whisper_model is None:
+        whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        print("Whisper model loaded!")
+    return whisper_model
 
 # Audio settings
 SAMPLE_RATE = 16000
@@ -134,7 +151,8 @@ def speech_to_text(audio_data, client: OpenAI = None, language: str = "en"):
             wf.writeframes(audio_data.tobytes())
             
     try:
-        segments, info = whisper_model.transcribe(
+        model = get_whisper_model()
+        segments, info = model.transcribe(
             temp_path,
             language=language,
             beam_size=5
@@ -151,7 +169,8 @@ def speech_to_text(audio_data, client: OpenAI = None, language: str = "en"):
 def transcribe_from_path(wav_path: str, language: str = "en") -> str:
     """Run faster-whisper on an existing WAV file and return the transcript."""
     # beam_size=1 (greedy) cuts STT latency by ~50% with minimal accuracy loss for clear speech.
-    segments, _ = whisper_model.transcribe(wav_path, language=language, beam_size=1)
+    model = get_whisper_model()
+    segments, _ = model.transcribe(wav_path, language=language, beam_size=1)
     return " ".join(s.text for s in segments).strip()
 
 
