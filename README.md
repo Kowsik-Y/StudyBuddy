@@ -1,4 +1,13 @@
 
+---
+title: Study Buddy
+emoji: 🎓
+colorFrom: blue
+colorTo: cyan
+sdk: docker
+app_port: 7860
+---
+
 # Voice AI Study Buddy
 
 A full-stack speech recognition and voice-assistant project with a FastAPI backend, a Next.js frontend, and a Chrome extension for microphone setup and capture.
