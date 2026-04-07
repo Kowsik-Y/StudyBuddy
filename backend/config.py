@@ -9,7 +9,7 @@ import warnings
 from dotenv import load_dotenv
 from openai import OpenAI
 
-load_dotenv("api.env")
+load_dotenv(".env")
 
 # ── OpenAI client ─────────────────────────────────────────────────────────────
 client = OpenAI(

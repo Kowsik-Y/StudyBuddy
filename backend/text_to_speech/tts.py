@@ -1,5 +1,5 @@
 """
-Text-to-Speech (TTS) module using OpenAI and edge-tts.
+Text-to-Speech (TTS) module using OpenAI.
 Streams audio directly to speakers without saving files.
 """
 
@@ -20,13 +20,13 @@ def _normalize_for_tts(text: str) -> str:
     """
     Fix common TTS mispronunciations before synthesis.
 
-    • N/M  → "N out of M"   (scores like 2/2 read as "February 2nd" by edge-tts)
+    • N/M  → "N out of M"   (scores like 2/2 read as "February 2nd")
     """
     # Replace score-like fractions  e.g. 2/2  4/5  10/10
     text = re.sub(r'\b(\d+)/(\d+)\b', lambda m: f"{m.group(1)} out of {m.group(2)}", text)
     return text
 
-print("edge-tts initialized for local TTS generation!")
+print("Initialized for local TTS generation!")
 
 
 def stream_tts_and_play_openai(text, client: OpenAI, assistant_speaking):
@@ -69,13 +69,13 @@ def stream_tts_and_play_openai(text, client: OpenAI, assistant_speaking):
 
 
 def stream_tts_and_play(text, client: OpenAI = None, assistant_speaking=None):
-    """Stream TTS audio directly to speakers in real-time using edge-tts (offline)."""
+    """Stream TTS audio directly to speakers in real-time   (offline)."""
     print("🔊 Speaking...Offline")
     if assistant_speaking:
         assistant_speaking.set()
 
     try:
-        # Run the async edge-tts in a synchronous context
+        # Run the async in a synchronous context
         asyncio.run(_stream_edge_tts(text))
         print("✅ Done speaking.")
     except Exception as e:
@@ -86,7 +86,7 @@ def stream_tts_and_play(text, client: OpenAI = None, assistant_speaking=None):
 
 
 async def _stream_edge_tts(text: str):
-    """Internal async function to play edge-tts audio."""
+    """Internal async function to play audio."""
     
     voice = "en-US-AriaNeural"
     communicate = edge_tts.Communicate(text, voice)
@@ -109,7 +109,7 @@ async def _stream_edge_tts(text: str):
             os.remove(temp_path)
 
 
-# ── Voice mapping: edge-tts names → OpenAI voices ────────────────────────────
+# ── Voice mapping: names → OpenAI voices ────────────────────────────
 _VOICE_MAP: dict[str, str] = {
     "en-US-AriaNeural":     "nova",
     "en-US-GuyNeural":      "onyx",
@@ -125,10 +125,10 @@ def _get_tts_client() -> OpenAI:
     Returns an OpenAI client pointed directly at api.openai.com for TTS.
     The LiteLLM proxy (OPENAI_BASE_URL) does not support audio.speech endpoints,
     so TTS always talks to OpenAI directly using NVIDIA_API_KEY as a direct
-    OpenAI key if available, otherwise falls back to edge-tts.
+    OpenAI key if available, otherwise falls back
     """
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), "..", "api.env"))
+    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
     # Prefer a dedicated TTS key; fall back to the main API key (sk- required)
     tts_key = os.getenv("TTS_API_KEY") or os.getenv("OPENAI_API_KEY", "")
     return OpenAI(api_key=tts_key)  # no custom base_url → real OpenAI
@@ -137,7 +137,7 @@ def _get_tts_client() -> OpenAI:
 async def to_bytes(text: str, voice: str = "en-US-AriaNeural") -> bytes:
     """
     Generate TTS with OpenAI gpt-4o-mini-tts and return raw MP3 bytes.
-    Falls back to edge-tts if the OpenAI TTS call fails.
+    Falls back if the OpenAI TTS call fails.
     """
     text = _normalize_for_tts(text)
     oai_voice = _VOICE_MAP.get(voice, _DEFAULT_OAI_VOICE)
@@ -155,7 +155,7 @@ async def to_bytes(text: str, voice: str = "en-US-AriaNeural") -> bytes:
         )
         return response.content
     except Exception as e:
-        print(f"⚠️ OpenAI TTS failed ({e}), falling back to edge-tts")
+        print(f"⚠️ OpenAI TTS failed ({e}), falling back")
         import io as _io
         communicate = edge_tts.Communicate(text, voice)
         buf = _io.BytesIO()
@@ -168,7 +168,7 @@ async def to_bytes(text: str, voice: str = "en-US-AriaNeural") -> bytes:
 async def stream_bytes(text: str, voice: str = "en-US-AriaNeural"):
     """
     Async generator — yields raw MP3 byte chunks.
-    Uses OpenAI gpt-4o-mini-tts, falls back to edge-tts on failure.
+    Uses OpenAI gpt-4o-mini-tts, falls back on failure.
     """
     data = await to_bytes(text, voice)
     chunk_size = 1096

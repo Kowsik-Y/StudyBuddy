@@ -22,7 +22,7 @@ Key backend files:
 
 - [backend/main.py](backend/main.py) — application entry
 - [backend/fastapi_server.py](backend/fastapi_server.py) — FastAPI app and routes
-- [backend/api.env](backend/api.env) — environment variables (example)
+- [backend/.env](backend/.env) — environment variables (example)
 
 Frontend entry:
 
@@ -51,7 +51,7 @@ pip install -r backend/requirements.txt
 
 3. Configure environment variables:
 
-- Copy or edit [backend/api.env](backend/api.env) with your keys and settings.
+- Copy or edit [backend/.env](backend/.env) with your keys and settings.
 
 4. Run the backend (development):
 

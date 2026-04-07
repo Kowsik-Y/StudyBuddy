@@ -14,7 +14,7 @@ from text_to_speech.tts import stream_tts_and_play
 from llm_response.llm_response import run_agent_streaming
 
 # Load environment variables
-load_dotenv('api.env')
+load_dotenv('.env')
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 BASE_URL = os.getenv('OPENAI_BASE_URL')

@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-load_dotenv("api.env")
+load_dotenv(".env")
 
 from config import logger
 from analytics.db import init_db
