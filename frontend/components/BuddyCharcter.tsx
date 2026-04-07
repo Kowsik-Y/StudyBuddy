@@ -214,8 +214,8 @@ export default function BuddyCharacter({
         .arm-l { transform-origin:28px 100px; transition:transform .35s ease; }
         .arm-r { transform-origin:92px 100px; transition:transform .35s ease; }
         .leg-l { transform-origin:42px 158px; animation:${isThinking ? 'legThinkL 2.2s ease-in-out infinite' :
-                        isListening ? 'legListenL 1.6s ease-in-out infinite' :
-                            'legLIdle 3s ease-in-out infinite'
+                    isListening ? 'legListenL 1.6s ease-in-out infinite' :
+                        'legLIdle 3s ease-in-out infinite'
                 }; }
         .leg-r { transform-origin:78px 158px; animation:${isThinking ? 'legThinkR 2.2s ease-in-out infinite' :
                     isListening ? 'legListenR 1.6s ease-in-out infinite' :
