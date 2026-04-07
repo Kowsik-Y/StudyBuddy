@@ -1,3 +1,4 @@
+edge-tts
 fastapi
 uvicorn[standard]
 python-dotenv

@@ -8,12 +8,20 @@ import re
 import time
 import asyncio
 import numpy as np
-import sounddevice as sd
 import openai
 from openai import OpenAI
-import edge_tts
 import tempfile
 import subprocess
+
+try:
+    import sounddevice as sd
+except Exception:
+    sd = None
+
+try:
+    import edge_tts
+except Exception:
+    edge_tts = None
 
 
 def _normalize_for_tts(text: str) -> str:
@@ -33,6 +41,10 @@ def stream_tts_and_play_openai(text, client: OpenAI, assistant_speaking):
     """Stream TTS audio directly to speakers in real-time using OpenAI API (backup method)."""
     print("🔊 Speaking...OpenAI")
     assistant_speaking.set()
+
+    if sd is None:
+        assistant_speaking.clear()
+        raise RuntimeError("sounddevice/PortAudio is not available for local speaker playback")
 
     for attempt in range(3):
         try:
@@ -75,8 +87,15 @@ def stream_tts_and_play(text, client: OpenAI = None, assistant_speaking=None):
         assistant_speaking.set()
 
     try:
-        # Run the async in a synchronous context
-        asyncio.run(_stream_edge_tts(text))
+        if edge_tts is not None:
+            # Run async edge-tts in a synchronous context
+            asyncio.run(_stream_edge_tts(text))
+        elif client is not None:
+            # Fall back to OpenAI playback if edge-tts is unavailable.
+            stream_tts_and_play_openai(text, client, assistant_speaking)
+            return
+        else:
+            raise RuntimeError("edge_tts is not installed and no OpenAI client was provided")
         print("✅ Done speaking.")
     except Exception as e:
         print(f"❌ TTS error: {e}")
@@ -87,6 +106,8 @@ def stream_tts_and_play(text, client: OpenAI = None, assistant_speaking=None):
 
 async def _stream_edge_tts(text: str):
     """Internal async function to play audio."""
+    if edge_tts is None:
+        raise RuntimeError("edge_tts is not installed")
     
     voice = "en-US-AriaNeural"
     communicate = edge_tts.Communicate(text, voice)
@@ -156,6 +177,8 @@ async def to_bytes(text: str, voice: str = "en-US-AriaNeural") -> bytes:
         return response.content
     except Exception as e:
         print(f"⚠️ OpenAI TTS failed ({e}), falling back")
+        if edge_tts is None:
+            raise RuntimeError("Both OpenAI TTS and edge_tts fallback are unavailable")
         import io as _io
         communicate = edge_tts.Communicate(text, voice)
         buf = _io.BytesIO()
