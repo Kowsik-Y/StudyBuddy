@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     ffmpeg \
     make \
+    libportaudio2 \
+    portaudio19-dev \
+    libasound2-dev \
     libavformat-dev \
     libavcodec-dev \
     libavdevice-dev \

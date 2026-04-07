@@ -10,10 +10,14 @@ import numpy as np
 import collections
 import threading
 import time
-import sounddevice as sd
 from openai import OpenAI
 import tempfile
 from faster_whisper import WhisperModel
+
+try:
+    import sounddevice as sd
+except Exception:
+    sd = None
 
 
 model_size = "base"
@@ -55,6 +59,12 @@ def listen_for_speech(assistant_speaking):
     Continuously listen to microphone and detect speech via VAD.
     Returns numpy int16 array of recorded audio.
     """
+    if sd is None:
+        raise RuntimeError(
+            "sounddevice/PortAudio is not available in this environment. "
+            "Microphone capture is disabled."
+        )
+
     frames = []
     is_speaking = False
     silence_blocks = 0
